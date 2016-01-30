@@ -1,12 +1,14 @@
 package jmail;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Properties;
 
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
+import javax.mail.internet.MimeMessage;
 
 import com.sun.mail.pop3.POP3Store;
 import java.util.Scanner;
@@ -36,6 +38,7 @@ public class MailReceiver {
         } catch (IOException | MessagingException ex) {
             Logger.getLogger(MailReceiver.class.getName()).log(Level.SEVERE, null, ex);
         }
+        input.close();
     }
 
     public void receive() throws IOException, MessagingException {
@@ -53,16 +56,28 @@ public class MailReceiver {
         Message[] messages = emailFolder.getMessages();
         for (int i = 0; i < messages.length; i++) {
             Message message = messages[i];
+            
+            JMailMessage jMailMessage = toJMailMessage((MimeMessage)message);
+            
             System.out.println("==============================");
             System.out.println("Email #" + (i + 1));
-            System.out.println("Subject: " + message.getSubject());
-            System.out.println("From: " + ((message.getFrom() != null) ? message.getFrom()[0] : ""));
-            System.out.println("Text: " + message.getContent().toString());
+            jMailMessage.print();
         }
 
         emailFolder.close(false);
         emailStore.close();
 
+    }
+    
+    public JMailMessage toJMailMessage(MimeMessage mimeMessage) throws MessagingException, IOException {  	
+    	// TODO handle decryption here
+    	String toAddress = mimeMessage.getRecipients(Message.RecipientType.TO)[0].toString();
+    	String emailAddress = mimeMessage.getFrom()[0].toString();
+    	Date sendDate = mimeMessage.getSentDate();
+    	String subject = mimeMessage.getSubject();
+    	String body = mimeMessage.getContent().toString();
+    	
+    	return new JMailMessage(toAddress, emailAddress, sendDate, subject, body);
     }
 
 }
