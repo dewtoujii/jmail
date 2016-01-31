@@ -57,7 +57,7 @@ public class MailReceiver {
         for (int i = 0; i < messages.length; i++) {
             Message message = messages[i];
             
-            JMailMessage jMailMessage = toJMailMessage((MimeMessage)message);
+            JMailMessage jMailMessage = new JMailMessage((MimeMessage)message);
             
             System.out.println("==============================");
             System.out.println("Email #" + (i + 1));
@@ -68,16 +68,4 @@ public class MailReceiver {
         emailStore.close();
 
     }
-    
-    public JMailMessage toJMailMessage(MimeMessage mimeMessage) throws MessagingException, IOException {  	
-    	// TODO handle decryption here
-    	String toAddress = mimeMessage.getRecipients(Message.RecipientType.TO)[0].toString();
-    	String emailAddress = mimeMessage.getFrom()[0].toString();
-    	Date sendDate = mimeMessage.getSentDate();
-    	String subject = mimeMessage.getSubject();
-    	String body = mimeMessage.getContent().toString();
-    	
-    	return new JMailMessage(toAddress, emailAddress, sendDate, subject, body);
-    }
-
 }
