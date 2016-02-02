@@ -1,5 +1,6 @@
 package jmail;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.Properties;
 import java.util.Scanner;
@@ -26,24 +27,33 @@ public class MailSender {
 	}
 
 	public static void main(String[] args) {
-		Scanner input = new Scanner(System.in);
-		System.out.print("Username: ");
-		String username = input.nextLine();
-		System.out.print("Password:");
-		String pw = input.nextLine();
+		String username;
+    	String pw;
+    	if(args.length == 2) {
+    		username = args[0];
+    		pw = args[1];
+    	}
+    	else {
+    		Scanner input = new Scanner(System.in);
+    		System.out.print("Username: ");
+    		username = input.nextLine();
+    		System.out.print("Password: ");
+    		pw = input.nextLine();
+    	}
+		
 		MailSender sender = new MailSender("localhost", username, pw, username);
 
 		JMailMessage jMailMessage = sender.readMessage();
 
 		try {
 			sender.sendMessage(jMailMessage);
-		} catch (MessagingException e) {
+		} catch (MessagingException | IOException e) {
 			e.printStackTrace();
 		}
 		System.out.println("Done");
 	}
 
-	public void sendMessage(JMailMessage jMailMessage) throws MessagingException {
+	public void sendMessage(JMailMessage jMailMessage) throws MessagingException, IOException {
 		Properties props = new Properties();
 		props.put("mail.transport.protocol", "smtp");
 		props.put("mail.smtp.host", hostname);

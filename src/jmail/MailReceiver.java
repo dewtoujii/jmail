@@ -1,8 +1,11 @@
 package jmail;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Date;
 import java.util.Properties;
+import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.mail.Folder;
 import javax.mail.Message;
@@ -11,9 +14,6 @@ import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 
 import com.sun.mail.pop3.POP3Store;
-import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class MailReceiver {
 
@@ -28,20 +28,28 @@ public class MailReceiver {
     }
 
     public static void main(String[] args) {
-        Scanner input = new Scanner(System.in);
-        System.out.println("Username: ");
-        String username = input.nextLine();
-        System.out.println("Password:");
-        String pw = input.nextLine();
+    	String username;
+    	String pw;
+    	if(args.length == 2) {
+    		username = args[0];
+    		pw = args[1];
+    	}
+    	else {
+    		Scanner input = new Scanner(System.in);
+            System.out.println("Username: ");
+            username = input.nextLine();
+            System.out.println("Password:");
+            pw = input.nextLine();
+    	}
+    	
         try {
             new MailReceiver("localhost", username, pw).receive();
-        } catch (IOException | MessagingException ex) {
+        } catch (IOException | MessagingException | ClassNotFoundException ex) {
             Logger.getLogger(MailReceiver.class.getName()).log(Level.SEVERE, null, ex);
         }
-        input.close();
     }
 
-    public void receive() throws IOException, MessagingException {
+    public void receive() throws IOException, MessagingException, ClassNotFoundException {
 
         Properties properties = new Properties();
         properties.put("mail.pop3.host", hostname);

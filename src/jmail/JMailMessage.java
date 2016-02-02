@@ -6,12 +6,13 @@
 package jmail;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.Key;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
-import javax.activation.DataContentHandler;
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -19,11 +20,11 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-
-import com.sun.crypto.provider.AESKeyGenerator;
+import javax.mail.util.ByteArrayDataSource;
 
 import crypto.AES;
 import crypto.Ciphertext;
+import util.ByteUtils;
 
 /**
  *
@@ -44,43 +45,60 @@ public class JMailMessage {
 		this.body = body;
 	}
 
-	public JMailMessage(MimeMessage mimeMessage) throws MessagingException, IOException {
+	public JMailMessage(MimeMessage mimeMessage) throws MessagingException, IOException, ClassNotFoundException {
 		this.toAddress = mimeMessage.getRecipients(Message.RecipientType.TO)[0].toString();
 		this.emailAddress = mimeMessage.getFrom()[0].toString();
 		this.sendDate = mimeMessage.getSentDate();
 		this.subject = mimeMessage.getSubject();
+		
 		// TODO handle decryption of body here
-//		MimeMultipart mmp = (MimeMultipart) mimeMessage.getContent();
-//		MimeBodyPart encryptedDataPart = (MimeBodyPart) mmp.getBodyPart(0);
-//		MimeBodyPart encryptedKeyPart = (MimeBodyPart) mmp.getBodyPart(1);
-//		Ciphertext encryptedText = (Ciphertext) encryptedDataPart.getContent();
-//		Key aesKey = (Key) encryptedKeyPart.getContent();
-//		String decryptedText = AES.decrypt(aesKey, encryptedText).toString();
-//		this.body = decryptedText;
-		this.body = mimeMessage.getContent().toString();
+		Object content = mimeMessage.getContent();
+		
+		if(content instanceof String) {
+			this.body = (String)content;
+		}
+		else {
+			MimeMultipart mmp = (MimeMultipart) mimeMessage.getContent();
+			MimeBodyPart encryptedDataPart = (MimeBodyPart) mmp.getBodyPart(0);
+			MimeBodyPart encryptedKeyPart = (MimeBodyPart) mmp.getBodyPart(1);
+			
+			InputStream dataIS = encryptedDataPart.getInputStream();		
+			Ciphertext encryptedText = (Ciphertext) ByteUtils.deserialize(ByteUtils.toByteArray(dataIS));
+			
+			InputStream keyIS = encryptedKeyPart.getInputStream();
+			Key aesKey = (Key) ByteUtils.deserialize(ByteUtils.toByteArray(keyIS));
+			byte[] decryptedBytes = AES.decrypt(aesKey, encryptedText);
+			this.body = new String(decryptedBytes, "UTF-8");;
+		}		
 	}
 
-	public MimeMessage toMimeMessage(Session session) throws MessagingException {
+	public MimeMessage toMimeMessage(Session session) throws MessagingException, IOException {
 		MimeMessage message = new MimeMessage(session);
 
 		// TODO handle encryption of body here
-//		Key aesKey;
-//		try {
-//			aesKey = AES.getNewKey();
-//			KeyFactory kf = null;
-//			
-//			Ciphertext encryptedText = AES.encrypt(aesKey, body.getBytes());
-//			MimeBodyPart encryptedDataPart = new MimeBodyPart();
-//			encryptedDataPart.setContent(encryptedText, "application/java-vm");
-//			MimeBodyPart encryptedKeyPart = new MimeBodyPart();
-//			encryptedKeyPart.setContent(aesKey, "application/java-vm");
-//
-//			MimeMultipart mp = new MimeMultipart(encryptedDataPart, encryptedKeyPart);
-//			message.setContent(mp);
-//		} catch (NoSuchAlgorithmException e) {
-//			e.printStackTrace();
-//		}
-		message.setContent(body, "text/plain");
+		
+		Key aesKey;
+		try {
+			aesKey = AES.getNewKey();			
+			
+			Ciphertext encryptedText = AES.encrypt(aesKey, body.getBytes());
+			
+			MimeBodyPart encryptedDataPart = new MimeBodyPart();
+			byte[] encryptedDataBytes = ByteUtils.serialize(encryptedText);
+			DataSource s = new ByteArrayDataSource(encryptedDataBytes, "application/octet-stream");
+			encryptedDataPart.setDataHandler(new DataHandler(s));
+			
+			MimeBodyPart encryptedKeyPart = new MimeBodyPart();
+			byte[] keyBytes = ByteUtils.serialize(aesKey);
+			DataSource s1 = new ByteArrayDataSource(keyBytes, "application/octet-stream");
+			encryptedKeyPart.setDataHandler(new DataHandler(s1));
+			
+			MimeMultipart mp = new MimeMultipart(encryptedDataPart, encryptedKeyPart);
+			message.setContent(mp);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+//		message.setContent(body, "text/plain");
 
 		message.setSubject(subject);
 		message.setSentDate(sendDate);

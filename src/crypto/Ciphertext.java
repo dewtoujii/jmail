@@ -1,12 +1,18 @@
 package crypto;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Tobi
  */
-public class Ciphertext {
+public class Ciphertext implements Serializable {
 
-    public final byte[] encText;	// encrypted string
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -8859764714808008859L;
+	public final byte[] encText;	// encrypted string
     public final byte[] iv;	// initialization vector
 
     public Ciphertext(byte[] encText, byte[] iv) {
