@@ -1,96 +1,91 @@
 package jmail;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Date;
-import java.util.Properties;
 import java.util.Scanner;
 
-import javax.mail.Authenticator;
-import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.MimeMessage;
 
 public class MailSender {
-	private final String hostname;
-	private final String username;
-	private final String pw;
 	private final String emailAddress;
+	private final JavaMailConnection javaMailConnection;
 
 	public MailSender(String hostname, String username, String pw, String emailAddress) {
-		this.hostname = hostname;
-		this.username = username;
-		this.pw = pw;
 		this.emailAddress = emailAddress;
+		this.javaMailConnection = new JavaMailConnection(hostname, username, pw);
 	}
 
+	/**
+	 * 
+	 * @param args
+	 *            arg0=username, arg1=pw, arg2=mailaddress
+	 */
 	public static void main(String[] args) {
-		String username;
-    	String pw;
-    	if(args.length == 2) {
-    		username = args[0];
-    		pw = args[1];
-    	}
-    	else {
-    		Scanner input = new Scanner(System.in);
-    		System.out.print("Username: ");
-    		username = input.nextLine();
-    		System.out.print("Password: ");
-    		pw = input.nextLine();
-    	}
-		
-		MailSender sender = new MailSender("localhost", username, pw, username);
-
-		JMailMessage jMailMessage = sender.readMessage();
-
-		try {
-			sender.sendMessage(jMailMessage);
-		} catch (MessagingException | IOException e) {
-			e.printStackTrace();
+		String username, pw, emailAddress;
+		if (args.length == 3) {
+			username = args[0];
+			pw = args[1];
+			emailAddress = args[2];
+		} else {
+			@SuppressWarnings("resource")
+			Scanner input = new Scanner(System.in);
+			System.out.print("Username: ");
+			username = input.nextLine();
+			System.out.print("Password: ");
+			pw = input.nextLine();
+			System.out.print("Email-address: ");
+			emailAddress = input.nextLine();
 		}
+		MailSender sender = new MailSender("localhost", username, pw, emailAddress); // init MailSender
+		sender.connect(); // connect
+		JMailMessage jMailMessage = sender.readMessage(); // read in JMailMessage
+		sender.sendMessage(jMailMessage); // send JMailMessage
+		sender.close(); // close
+	}
+
+	public void connect() {
+		System.out.print("Connecting...");
+		javaMailConnection.connectSMTP();
 		System.out.println("Done");
 	}
 
-	public void sendMessage(JMailMessage jMailMessage) throws MessagingException, IOException {
-		Properties props = new Properties();
-		props.put("mail.transport.protocol", "smtp");
-		props.put("mail.smtp.host", hostname);
-		props.put("mail.smtp.auth", "true");
+	public void close() {
+		javaMailConnection.close();
+	}
 
-		Authenticator auth = new SMTPAuthenticator();
+	public void sendMessage(JMailMessage jMailMessage) {
+		System.out.print("Sending...");
+		try {
+			javaMailConnection.sendMessage(jMailMessage.toMimeMessage(javaMailConnection.getSession()));
+			System.out.println("Done");
+		} catch (MessagingException | IOException e) {
+			System.out.println("Error!");
+		}
 
-		Session mailSession = Session.getDefaultInstance(props, auth);
-		// Session mailSession = Session.getDefaultInstance(props);
-
-		MimeMessage mimeMessage = jMailMessage.toMimeMessage(mailSession);
-
-		// uncomment for debugging infos to stdout
-		// mailSession.setDebug(true);
-		Transport transport = mailSession.getTransport();
-		transport.connect();
-		transport.sendMessage(mimeMessage, mimeMessage.getRecipients(Message.RecipientType.TO));
-		transport.close();
 	}
 
 	public JMailMessage readMessage() {
-		Scanner scanner = new Scanner(System.in);
-		System.out.print("Recipient: ");
-		String recipient = scanner.nextLine();
-		System.out.print("Subject: ");
-		String subject = scanner.nextLine();
-		System.out.print("Text: ");
-		String content = scanner.nextLine();
-		System.out.print("Sending...");
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		try {
+			System.out.print("Recipient: ");
+			String recipient = br.readLine();
+			System.out.print("Subject: ");
+			String subject = br.readLine();
+			StringBuffer buf = new StringBuffer();
+			System.out.println("Text: (end with . in own line)");
+			String line = "";
+			do {
+				buf.append(line + "\n");
+				line = br.readLine();
+			} while (line != null && line.compareTo(".") != 0);
 
-		return new JMailMessage(recipient, emailAddress, new Date(System.currentTimeMillis()), subject, content);
-	}
-
-	private class SMTPAuthenticator extends Authenticator {
-		@Override
-		public PasswordAuthentication getPasswordAuthentication() {
-			return new PasswordAuthentication(username, pw);
+			return new JMailMessage(recipient, emailAddress, new Date(System.currentTimeMillis()), subject,
+					buf.toString());
+		} catch (IOException e) {
+			System.out.println("Error while reading in message");
+			return null;
 		}
 	}
 }

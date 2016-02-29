@@ -1,18 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package jmail;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
+import javax.crypto.spec.SecretKeySpec;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -24,7 +19,6 @@ import javax.mail.util.ByteArrayDataSource;
 
 import crypto.AES;
 import crypto.Ciphertext;
-import util.ByteUtils;
 
 /**
  *
@@ -51,49 +45,68 @@ public class JMailMessage {
 		this.sendDate = mimeMessage.getSentDate();
 		this.subject = mimeMessage.getSubject();
 		
-		// TODO handle decryption of body here
+		// decryption of the message body
 		Object content = mimeMessage.getContent();
 		
 		if(content instanceof String) {
 			this.body = (String)content;
 		}
-		else {
+		else if(content instanceof MimeMultipart) {
 			MimeMultipart mmp = (MimeMultipart) mimeMessage.getContent();
-			MimeBodyPart encryptedDataPart = (MimeBodyPart) mmp.getBodyPart(0);
-			MimeBodyPart encryptedKeyPart = (MimeBodyPart) mmp.getBodyPart(1);
+			if(mmp.getCount()== 3) {
+				MimeBodyPart encryptedDataPart = (MimeBodyPart) mmp.getBodyPart(0);
+				MimeBodyPart ivPart = (MimeBodyPart) mmp.getBodyPart(1);
+				MimeBodyPart encryptedKeyPart = (MimeBodyPart) mmp.getBodyPart(2);
+				
+				byte[] encText = JavaMailConnection.inputStreamToBytes(encryptedDataPart.getInputStream());
+				byte[] iv = JavaMailConnection.inputStreamToBytes(ivPart.getInputStream());
+				byte[] keyBytes = JavaMailConnection.inputStreamToBytes(encryptedKeyPart.getInputStream());
+				
+				Ciphertext ciphertext = new Ciphertext(encText, iv);
+				
+				Key aesKey = new SecretKeySpec(keyBytes, "AES");
+				byte[] decryptedBytes = AES.decrypt(aesKey, ciphertext);
+				this.body = new String(decryptedBytes, "UTF-8");
+			}
+			else {
+				this.body = "Fehler beim Lesen der MimeMessage";
+			}
 			
-			InputStream dataIS = encryptedDataPart.getInputStream();		
-			Ciphertext encryptedText = (Ciphertext) ByteUtils.deserialize(ByteUtils.toByteArray(dataIS));
-			
-			InputStream keyIS = encryptedKeyPart.getInputStream();
-			Key aesKey = (Key) ByteUtils.deserialize(ByteUtils.toByteArray(keyIS));
-			byte[] decryptedBytes = AES.decrypt(aesKey, encryptedText);
-			this.body = new String(decryptedBytes, "UTF-8");;
-		}		
+		}
+		else {
+			this.body = "Fehler beim Lesen der MimeMessage";
+		}
 	}
 
 	public MimeMessage toMimeMessage(Session session) throws MessagingException, IOException {
 		MimeMessage message = new MimeMessage(session);
-
-		// TODO handle encryption of body here
 		
+		// encryption of the message body
 		Key aesKey;
 		try {
 			aesKey = AES.getNewKey();			
 			
-			Ciphertext encryptedText = AES.encrypt(aesKey, body.getBytes());
+			// encrypt body with AES
+			Ciphertext ciphertext = AES.encrypt(aesKey, body.getBytes());
 			
+			// Encrypted body part
 			MimeBodyPart encryptedDataPart = new MimeBodyPart();
-			byte[] encryptedDataBytes = ByteUtils.serialize(encryptedText);
-			DataSource s = new ByteArrayDataSource(encryptedDataBytes, "application/octet-stream");
-			encryptedDataPart.setDataHandler(new DataHandler(s));
+			DataSource dataSource = new ByteArrayDataSource(ciphertext.encText, "application/octet-stream");
+			encryptedDataPart.setDataHandler(new DataHandler(dataSource));
 			
+			// Initialization Vector part
+			MimeBodyPart ivPart = new MimeBodyPart();
+			DataSource ivSource = new ByteArrayDataSource(ciphertext.iv, "application/octet-stream");
+			ivPart.setDataHandler(new DataHandler(ivSource));
+			
+			// Key part
 			MimeBodyPart encryptedKeyPart = new MimeBodyPart();
-			byte[] keyBytes = ByteUtils.serialize(aesKey);
-			DataSource s1 = new ByteArrayDataSource(keyBytes, "application/octet-stream");
-			encryptedKeyPart.setDataHandler(new DataHandler(s1));
+			byte[] keyBytes = aesKey.getEncoded();
+			DataSource keySource = new ByteArrayDataSource(keyBytes, "application/octet-stream");
+			encryptedKeyPart.setDataHandler(new DataHandler(keySource));
 			
-			MimeMultipart mp = new MimeMultipart(encryptedDataPart, encryptedKeyPart);
+			// create Multipart
+			MimeMultipart mp = new MimeMultipart(encryptedDataPart, ivPart, encryptedKeyPart);
 			message.setContent(mp);
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
