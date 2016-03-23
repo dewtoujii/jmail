@@ -4,9 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Date;
-import java.util.Scanner;
 
 import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 
 public class MailSender {
 	private final String emailAddress;
@@ -20,50 +20,56 @@ public class MailSender {
 	/**
 	 * 
 	 * @param args
-	 *            arg0=username, arg1=pw, arg2=mailaddress
+	 *            arg0=hostname, arg1=username, arg2=pw, arg3=mailaddress
 	 */
 	public static void main(String[] args) {
-		String username, pw, emailAddress;
-		if (args.length == 3) {
-			username = args[0];
-			pw = args[1];
-			emailAddress = args[2];
+		String hostname, username, pw, emailAddress;
+		if (args.length == 4) {
+			hostname = args[0];
+			username = args[1];
+			pw = args[2];
+			emailAddress = args[3];
 		} else {
-			@SuppressWarnings("resource")
-			Scanner input = new Scanner(System.in);
-			System.out.print("Username: ");
-			username = input.nextLine();
-			System.out.print("Password: ");
-			pw = input.nextLine();
-			System.out.print("Email-address: ");
-			emailAddress = input.nextLine();
+			System.out.println("Falsche Parameter!");
+			return;
 		}
-		MailSender sender = new MailSender("localhost", username, pw, emailAddress); // init MailSender
+		MailSender sender = new MailSender(hostname, username, pw, emailAddress); // init
+																					// MailSender
 		sender.connect(); // connect
-		JMailMessage jMailMessage = sender.readMessage(); // read in JMailMessage
-		sender.sendMessage(jMailMessage); // send JMailMessage
+		JMailMessage jMailMessage = sender.readMessage(); // read in
+															// JMailMessage
+		try {
+			sender.sendMessage(jMailMessage);
+		} catch (MessagingException | IOException e) {
+			System.out.println("Fehler beim Senden!");
+		} // send JMailMessage
 		sender.close(); // close
 	}
 
 	public void connect() {
 		System.out.print("Connecting...");
-		javaMailConnection.connectSMTP();
-		System.out.println("Done");
+		if (javaMailConnection != null) {
+			javaMailConnection.connectSMTP();
+			System.out.println("Done");
+		} else {
+			System.out.println("Error");
+		}
 	}
 
 	public void close() {
-		javaMailConnection.close();
+		if (javaMailConnection != null)
+			javaMailConnection.close();
 	}
 
-	public void sendMessage(JMailMessage jMailMessage) {
+	public void sendMessage(JMailMessage jMailMessage) throws MessagingException, IOException {
 		System.out.print("Sending...");
-		try {
-			javaMailConnection.sendMessage(jMailMessage.toMimeMessage(javaMailConnection.getSession()));
+		if (javaMailConnection != null) {
+			MimeMessage mimeMessage = jMailMessage.toMimeMessage(javaMailConnection.getSession());
+			javaMailConnection.sendMessage(mimeMessage);
 			System.out.println("Done");
-		} catch (MessagingException | IOException e) {
-			System.out.println("Error!");
+		} else {
+			System.out.println("Error");
 		}
-
 	}
 
 	public JMailMessage readMessage() {
@@ -84,7 +90,7 @@ public class MailSender {
 			return new JMailMessage(recipient, emailAddress, new Date(System.currentTimeMillis()), subject,
 					buf.toString());
 		} catch (IOException e) {
-			System.out.println("Error while reading in message");
+			System.out.println("Fehler beim Einlesen der Nachricht!");
 			return null;
 		}
 	}

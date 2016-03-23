@@ -1,68 +1,51 @@
 package crypto;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
+import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 /**
  *
  * @author Tobi
  */
 public class RSA {
-	public static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
-		KeyPair keyPair = null;
+
+	public static byte[] encrypt(Key key, byte[] input)
+	// throws (InvalidKeyException, IllegalBlockSizeException,
+	// NullPointerException,
+	// BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException)
+	// where oneway(DESprin,P)
+	{
+		byte[] encryptedBytes = null;
+
 		try {
-			keyPair = KeyPairGenerator.getInstance("RSA", new org.bouncycastle.jce.provider.BouncyCastleProvider())
-					.generateKeyPair();
-		} catch (NullPointerException ignore) {
-		} // thrown by getInstance()...
-		return keyPair;
+			final Cipher rsaCipher_ = Cipher.getInstance("RSA/ECB/PKCS1Padding",
+					new org.bouncycastle.jce.provider.BouncyCastleProvider());
+			if (rsaCipher_ != null) {
+				rsaCipher_.init(Cipher.ENCRYPT_MODE, key);
+
+				// final byte{L}[]{L} input = s.getBytes();
+				encryptedBytes = rsaCipher_.doFinal(input);
+			}
+		} catch (Exception e) {
+		}
+
+		return encryptedBytes;
 	}
+	
+	public static byte[] decrypt(Key key, byte[] encryptedBytes) throws NoSuchAlgorithmException, NoSuchPaddingException,
+			InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+		Cipher rsaCipher_ = Cipher.getInstance("RSA/ECB/PKCS1Padding",
+				new org.bouncycastle.jce.provider.BouncyCastleProvider());
 
-	/**
-	 * reads a public key from an InputStream in X.509 encoding and returns it
-	 * 
-	 * @param InputStream
-	 *            with public key
-	 * @return X.509 public key read in from @in
-	 */
-	public static PublicKey getPublicKey(InputStream in) {
-		// read keys from file
-		final ByteArrayOutputStream pubKeyBaos = new ByteArrayOutputStream();
+		rsaCipher_.init(Cipher.DECRYPT_MODE, key);// .getBytes()));
 
-		X509EncodedKeySpec pubKeySpec = null;
-		int curByte = 0;
-		if (pubKeyBaos != null && in != null) {
-			try {
-				while ((curByte = in.read()) != -1) {
-					pubKeyBaos.write(curByte);
-				}
-			} catch (IOException e) {
-			}
-
-			pubKeySpec = new X509EncodedKeySpec(pubKeyBaos.toByteArray());
-			try {
-				pubKeyBaos.close();
-			} catch (IOException e) {
-			}
-		}
-
-		PublicKey pubKey = null;
-		try {
-			pubKey = KeyFactory.getInstance("RSA", new org.bouncycastle.jce.provider.BouncyCastleProvider())
-					.generatePublic(pubKeySpec);
-		} catch (InvalidKeySpecException e) {
-		} catch (NoSuchAlgorithmException e) {
-		} catch (NullPointerException ignore) { // thrown by getInstance(...).
-		}
-
-		return pubKey;
+		// byte{P:}[]{P:} encrypted = ciph.encText.getBytes();
+		return rsaCipher_.doFinal(encryptedBytes);
 	}
 }

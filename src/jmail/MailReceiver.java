@@ -1,7 +1,6 @@
 package jmail;
 
 import java.io.IOException;
-import java.util.Scanner;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -15,52 +14,61 @@ public class MailReceiver {
 	}
 
 	public static void main(String[] args) {
-		String username;
-		String pw;
-		if (args.length == 2) {
-			username = args[0];
-			pw = args[1];
+		String hostname, username, pw;
+		if (args.length == 3) {
+			hostname = args[0];
+			username = args[1];
+			pw = args[2];
 		} else {
-			@SuppressWarnings("resource")
-			Scanner input = new Scanner(System.in);
-			System.out.println("Username: ");
-			username = input.nextLine();
-			System.out.println("Password:");
-			pw = input.nextLine();
+			System.out.println("Falsche Parameter!");
+			return;
 		}
-		
-		MailReceiver receiver = new MailReceiver("localhost", username, pw);
+
+		MailReceiver receiver = new MailReceiver(hostname, username, pw);
 		receiver.connect();
 		receiver.printAllMessages();
 		receiver.close();
 	}
-	
+
 	public void connect() {
 		System.out.print("Connecting...");
-		javaMailConnection.connectPOP3();
-		System.out.println("Done");
+		if (javaMailConnection != null) {
+			javaMailConnection.connectPOP3();
+			System.out.println("Done");
+		} else {
+			System.out.println("Error");
+		}
+
 	}
-	
+
 	public void close() {
-		javaMailConnection.close();
+		if (javaMailConnection != null)
+			javaMailConnection.close();
+	}
+
+	public JMailMessage getJMailMessage(int index) {
+		if (javaMailConnection == null)
+			return null;
+		MimeMessage mimeMessage = javaMailConnection.getMimeMessage(index);
+		JMailMessage jMailMessage = null;
+		try {
+			jMailMessage = new JMailMessage(mimeMessage);
+		} catch (ClassNotFoundException | MessagingException | IOException e) {
+			System.out.println("Exception");
+		}
+		return jMailMessage;
 	}
 
 	public void printAllMessages() {
-		int messageCount = javaMailConnection.getMessageCount();
-		
+		int messageCount = javaMailConnection != null ? javaMailConnection.getMessageCount() : 0;
+
 		System.out.println("Number of messages: " + messageCount);
 
 		for (int i = 1; i <= messageCount; i++) {
 			System.out.println("==============================");
 			System.out.println("Email #" + i);
-			MimeMessage mimeMessage = javaMailConnection.getMimeMessage(i);
-			JMailMessage jMailMessage;
-			try {
-				jMailMessage = new JMailMessage(mimeMessage);
-				jMailMessage.print();
-			} catch (ClassNotFoundException | MessagingException | IOException e) {
-				System.out.println("Exception");
-			}			
+			JMailMessage jMailMessage = getJMailMessage(i);
+			jMailMessage.print();
 		}
 	}
 }

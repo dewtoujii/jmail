@@ -1,12 +1,16 @@
 package jmail;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -19,6 +23,8 @@ import javax.mail.util.ByteArrayDataSource;
 
 import crypto.AES;
 import crypto.Ciphertext;
+import crypto.RSA;
+import crypto.RSAKeys;
 
 /**
  *
@@ -62,11 +68,18 @@ public class JMailMessage {
 				byte[] iv = JavaMailConnection.inputStreamToBytes(ivPart.getInputStream());
 				byte[] keyBytes = JavaMailConnection.inputStreamToBytes(encryptedKeyPart.getInputStream());
 				
+				byte[] decryptedKeyBytes = null;
+				try {
+					decryptedKeyBytes = RSA.decrypt(RSAKeys.getPrivateKey(), keyBytes);
+				} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException
+						| IllegalBlockSizeException | BadPaddingException e) {
+				}
+				
 				Ciphertext ciphertext = new Ciphertext(encText, iv);
 				
-				Key aesKey = new SecretKeySpec(keyBytes, "AES");
+				Key aesKey = new SecretKeySpec(decryptedKeyBytes, "AES");
 				byte[] decryptedBytes = AES.decrypt(aesKey, ciphertext);
-				this.body = new String(decryptedBytes, "UTF-8");
+				this.body = new String(decryptedBytes);
 			}
 			else {
 				this.body = "Fehler beim Lesen der MimeMessage";
@@ -102,7 +115,10 @@ public class JMailMessage {
 			// Key part
 			MimeBodyPart encryptedKeyPart = new MimeBodyPart();
 			byte[] keyBytes = aesKey.getEncoded();
-			DataSource keySource = new ByteArrayDataSource(keyBytes, "application/octet-stream");
+			byte[] encryptedKeyBytes = null;
+			encryptedKeyBytes = RSA.encrypt(RSAKeys.getPublicKey(), keyBytes);
+			
+			DataSource keySource = new ByteArrayDataSource(encryptedKeyBytes, "application/octet-stream");
 			encryptedKeyPart.setDataHandler(new DataHandler(keySource));
 			
 			// create Multipart
