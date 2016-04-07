@@ -3,6 +3,6 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="C:/workspace/jmail/bcprov-jdk15on-154.jar"/>
-	<classpathentry kind="lib" path="C:/workspace/jmail/javax.mail.jar"/>
+	<classpathentry kind="lib" path="C:/workspace/jmail/javax.mail.jar" sourcepath="C:/workspace/jmail/javamail-1.5.5-src.zip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

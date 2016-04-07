@@ -1,0 +1,64 @@
+{ 
+    "methods": {	
+	"<java.io.PrintStream: void println(String)>": {"constraints": [], "effects": []},
+	"<java.io.PrintStream: void print(String)>": {"constraints": [], "effects": []},
+	"<java.lang.RuntimeException: void <init>()>" : {"constraints": [], "effects": []},
+	"<java.lang.RuntimeException: void <init>(String, Throwable)>" : {"constraints": [], "effects": []},
+	
+	"<javax.mail.internet.MimeMessage: Address[] getRecipients(RecipientType)>" : {"constraints": [], "effects": []},
+	"<javax.mail.internet.MimeMessage: Address[] getFrom()>" : {"constraints": [], "effects": []},
+	"<javax.mail.internet.MimeMessage: Date getSentDate()>" : {"constraints": [], "effects": []},
+	"<javax.mail.internet.MimeMessage: String getSubject()>" : {"constraints": [], "effects": []},
+	
+	"<java.util.Properties: void <init>()>" : {"constraints": [], "effects": []},
+	"<java.util.Hashtable: Object put(Object, Object)>": {"constraints": [], "effects": ["Owner"]},
+	"<javax.mail.Session: Session getInstance(Properties)>": {"constraints": ["@0 <= Owner", "pub <= @ret"], "effects": ["pub"]},
+	
+	"<javax.mail.Service: boolean isConnected()>": {"constraints": [], "effects": []},
+	
+	"<javax.activation.DataHandler: void <init>(DataSource)>": {"constraints": ["@0 <= pub"], "effects": []},
+	"<javax.mail.util.ByteArrayDataSource: void <init>(byte[], String)>": {"constraints": ["@0 <= pub", "@1 <= pub"], "effects": []},
+	
+	"<exceptionhandling.JMCHelper: Result<Transport> getTransport(Session)>": {"constraints": ["@0 <= pub", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<Store> getPOP3Store(Session)>": {"constraints": ["@0 <= pub", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<Folder> getFolder(POP3Store)>": {"constraints": ["@0 <= Owner", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<Integer> getMessageCount(Folder)>": {"constraints": ["@0 <= Owner", "Owner <= @ret"], "effects": []},	
+	"<exceptionhandling.JMCHelper: Result<Message> getMessage(Folder, int)>": {"constraints": ["@0 <= Owner", "@1 <= Owner", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<Object> getContent(MimeMessage)>": {"constraints": ["@0 <= pub", "Owner <= @ret"], "effects": []},	
+	"<exceptionhandling.JMCHelper: Result<InputStream> getInputStream(MimeMessage)>": {"constraints": ["@0 <= pub", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<Integer> readInputStream(InputStream)>": {"constraints": [], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<ByteArrayOutputStream> convertISToByteArray(InputStream)>": {"constraints": [], "effects": []},	
+	"<exceptionhandling.JMCHelper: Result<MimeMessage> createMimeMessage(Session, DataHandler, String, String, String)>": {"constraints": ["@0 <= pub", "@1 <= pub", "@2 <= pub", "@3 <= pub", "@4 <= pub", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<MimeMessage> createMultipartMimeMessage(Session, MimeMultipart, String, String, String, Date)>": {"constraints": ["@0 <= pub", "@1 <= pub", "@2 <= pub", "@3 <= pub", "@4 <= pub", "@5 <= pub", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<MimeMultipart> createMimeMultipart(BodyPart...)>": {"constraints": [], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<MimeBodyPart> createMimeBodyPart(DataHandler)>": {"constraints": ["@0 <= pub", "Owner <= @ret"], "effects": []},
+	
+	"<exceptionhandling.JMCHelper: Result<Void> openFolder(Folder, int)>": {"constraints": ["@0 <= Owner", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<Void> closeByteArrayOutputStream(ByteArrayOutputStream)>": {"constraints": ["@0 <= Owner", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.JMCHelper: Result<Void> connectService(Service, String, String)>": {"constraints": ["@0 <= Owner", "@1 <= pub", "@2 <= Owner", "Owner <= @ret"], "effects": ["pub"]},
+	"<exceptionhandling.JMCHelper: Result<Void> close(Service, Folder)>": {"constraints": ["@0 <= Owner", "@1 <= Owner", "Owner <= @ret"], "effects": ["pub"]},
+	"<exceptionhandling.JMCHelper: Result<Void> sendMessage(Transport, MimeMessage)>": {"constraints": [], "effects": []},
+	
+	"<exceptionhandling.CryptoHelper: Result<Key> generateAESKey()>": {"constraints": ["Owner <= @ret"], "effects": []},
+	"<exceptionhandling.CryptoHelper: Result<KeyPair> generateRSAKeyPair()>": {"constraints": ["pub <= @ret"], "effects": []},
+	"<exceptionhandling.CryptoHelper: Result<Ciphertext> doAESEncryption(Key, byte[])>": {"constraints": ["@0 <= Owner", "@1 <= Owner", "pub <= @ret"], "effects": []},
+	"<exceptionhandling.CryptoHelper: Result<Ciphertext> doAESDecryption(Key, Ciphertext)>": {"constraints": ["@0 <= Owner", "@1 <= pub", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.CryptoHelper: Result<Ciphertext> doRSAEncryption(Key, byte[])>": {"constraints": ["@0 <= Owner", "@1 <= Owner", "pub <= @ret"], "effects": []},
+	"<exceptionhandling.CryptoHelper: Result<Ciphertext> doRSADecryption(Key, byte[])>": {"constraints": ["@0 <= Owner", "@1 <= pub", "Owner <= @ret"], "effects": []},
+	
+	"<exceptionhandling.CryptoHelper: Result<ObjectInputStream> createObjectInputStream(File)>": {"constraints": ["@0 <= pub", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.CryptoHelper: Result<Object> readObject(ObjectInputStream)>": {"constraints": ["@0 <= Owner", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.CryptoHelper: Result<Void> closeObjectInputStream(ObjectInputStream)>": {"constraints": ["@0 <= Owner", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.CryptoHelper: Result<ObjectOutputStream> createObjectOutputStream(File)>": {"constraints": ["@0 <= pub", "Owner <= @ret"], "effects": []},
+	"<exceptionhandling.CryptoHelper: Result<Void> writeObjectAndcloseObjectOutputStream(KeyPair, ObjectOutputStream)>": {"constraints": ["@0 <= Owner", "@1 <= Owner", "Owner <= @ret"], "effects": []},
+	"<java.io.File: void <init>(String)>": {"constraints": ["@0 <= pub"], "effects": []},
+	},
+    
+    "fields": {
+	"<de.unifreiburg.cs.proglang.jgs.support.IO: int someInt>": "LOW",
+	"<de.unifreiburg.cs.proglang.jgs.support.IO: java.lang.String someString>": "LOW",
+	"<de.unifreiburg.cs.proglang.jgs.support.SString: de.unifreiburg.cs.proglang.jgs.support.SString MAX_WAS_CALLED>": "pub",
+	"<de.unifreiburg.cs.proglang.jgs.support.SString: de.unifreiburg.cs.proglang.jgs.support.SString PUBLIC_RESULT>": "pub",
+	"<de.unifreiburg.cs.proglang.jgs.support.SString: de.unifreiburg.cs.proglang.jgs.support.SString SECRET_RESULT>": "pub",
+    }
+}

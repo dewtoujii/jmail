@@ -1,0 +1,21 @@
+package javamail;
+
+public class JavaMailConnection[principal Owner] {
+	
+	private static int __JIF_SIG_OF_JAVA_CLASS$20030619 = 0;
+	
+	public JavaMailConnection(String hostname, String username, String{Owner:} password) {}
+
+	public native void connectSMTP();
+	public native void connectPOP3();
+	public native void close();
+
+	public native boolean sendMessage(String fromAddress, String toAddress, String subject, byte{}[] messageBytes);
+	public native int{} getMessageCount();
+	public native byte{}[] getMessage(int index);
+
+	// methods only used by JMail
+	//public native Session{Owner:} getSession();
+	//public native boolean sendMessage(MimeMessage{} mimeMessage);
+	//public native MimeMessage{} getMimeMessage(int index);
+}

@@ -1,18 +1,10 @@
 package crypto;
 
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.Key;
-import java.security.NoSuchAlgorithmException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
+import de.unifreiburg.cs.proglang.jgs.support.Constraints;
+import exceptionhandling.CryptoHelper;
+import exceptionhandling.Result;
 
 /**
  *
@@ -20,33 +12,30 @@ import javax.crypto.spec.IvParameterSpec;
  */
 public class AES {
 
-    public static Key getNewKey() throws NoSuchAlgorithmException {
-        return KeyGenerator.getInstance("AES").generateKey();
+	@Constraints({"Owner <= @ret"})
+    public static Key getNewKey() {
+		Result<Key> keyResult = CryptoHelper.generateAESKey();
+		if(keyResult.isSuccess())
+			return keyResult.getObject();
+		else
+			throw new RuntimeException("Fehler beim Erzeugen eines neuen AES-Keys!", keyResult.getException());
     }
 
+	@Constraints({ "@0 <= Owner", "@1 <= pub" })
     public static Ciphertext encrypt(Key k, byte[] bytes) {
-        Ciphertext ciphertext = null;
-        try {
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipher.init(Cipher.ENCRYPT_MODE, k);
-            byte[] encrypted = cipher.doFinal(bytes);
-            ciphertext = new Ciphertext(encrypted, cipher.getIV());
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException ex) {
-            Logger.getLogger(AES.class.getName()).log(Level.SEVERE, null, ex);
-        }	
-        return ciphertext;
+    	Result<Ciphertext> encryptResult = CryptoHelper.doAESEncryption(k, bytes);
+    	if(encryptResult.isSuccess())
+    		return encryptResult.getObject();
+    	else
+    		throw new RuntimeException("Fehler beim Verschlüsseln!", encryptResult.getException());
     }
 
+	@Constraints({ "@0 <= Owner", "@1 <= pub", "Owner <= @ret" })
     public static byte[] decrypt(Key k, Ciphertext ciphertext) {
-        byte[] decrypted = null;
-        try {
-
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipher.init(Cipher.DECRYPT_MODE, k, new IvParameterSpec(ciphertext.iv));
-            decrypted = cipher.doFinal(ciphertext.encText);
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException ex) {
-            Logger.getLogger(AES.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return decrypted;
+    	Result<Ciphertext> decryptResult = CryptoHelper.doAESDecryption(k, ciphertext);
+    	if(decryptResult.isSuccess())
+    		return decryptResult.getObject().encText;
+    	else
+    		throw new RuntimeException("Fehler beim Entschlüsseln!", decryptResult.getException());
     }
 }
